@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
+import { exportToExcel, exportToPDF, prepareReportsData } from '../../utils/exportUtils';
 import { BarChart3, Download, Filter, Calendar, Users, TrendingUp, PieChart } from 'lucide-react';
 
 const Reports: React.FC = () => {
@@ -41,9 +42,45 @@ const Reports: React.FC = () => {
   });
 
   const handleExport = (format: 'excel' | 'pdf') => {
-    // Mock export functionality
-    console.log(`Exporting ${selectedReport} report as ${format}`);
-    alert(`${selectedReport.charAt(0).toUpperCase() + selectedReport.slice(1)} report exported as ${format.toUpperCase()}`);
+    try {
+      // Prepare data based on selected report type
+      const exportData = prepareReportsData(selectedReport, leaveRequests, employees, departments);
+      
+      let result;
+      if (format === 'excel') {
+        result = exportToExcel(exportData);
+      } else {
+        result = exportToPDF(exportData);
+      }
+      
+      if (result.success) {
+        // Show success notification
+        setTimeout(() => {
+          const event = new CustomEvent('showToast', {
+            detail: {
+              type: 'success',
+              title: 'Export Successful',
+              message: `${selectedReport.charAt(0).toUpperCase() + selectedReport.slice(1)} report exported as ${format.toUpperCase()} successfully.`
+            }
+          });
+          window.dispatchEvent(event);
+        }, 100);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      // Show error notification
+      setTimeout(() => {
+        const event = new CustomEvent('showToast', {
+          detail: {
+            type: 'error',
+            title: 'Export Failed',
+            message: `Failed to export report: ${error instanceof Error ? error.message : 'Unknown error'}`
+          }
+        });
+        window.dispatchEvent(event);
+      }, 100);
+    }
   };
 
   return (
